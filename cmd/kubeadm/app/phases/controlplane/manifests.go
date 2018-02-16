@@ -37,6 +37,7 @@ import (
 	authzmodes "k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes"
 	"k8s.io/kubernetes/pkg/master/reconcilers"
 	utilpointer "k8s.io/kubernetes/pkg/util/pointer"
+	"k8s.io/kubernetes/pkg/util/selinux"
 	"k8s.io/kubernetes/pkg/util/version"
 )
 
@@ -85,6 +86,7 @@ func GetStaticPodSpecs(cfg *kubeadmapi.MasterConfiguration, k8sVersion *version.
 			LivenessProbe:   staticpodutil.ComponentProbe(cfg, kubeadmconstants.KubeAPIServer, int(cfg.API.BindPort), "/healthz", v1.URISchemeHTTPS),
 			Resources:       staticpodutil.ComponentResources("250m"),
 			Env:             getProxyEnvVars(),
+			SecurityContext: getSecurityContext(),
 		}, mounts.GetVolumes(kubeadmconstants.KubeAPIServer)),
 		kubeadmconstants.KubeControllerManager: staticpodutil.ComponentPod(v1.Container{
 			Name:            kubeadmconstants.KubeControllerManager,
@@ -95,6 +97,7 @@ func GetStaticPodSpecs(cfg *kubeadmapi.MasterConfiguration, k8sVersion *version.
 			LivenessProbe:   staticpodutil.ComponentProbe(cfg, kubeadmconstants.KubeControllerManager, 10252, "/healthz", v1.URISchemeHTTP),
 			Resources:       staticpodutil.ComponentResources("200m"),
 			Env:             getProxyEnvVars(),
+			SecurityContext: getSecurityContext(),
 		}, mounts.GetVolumes(kubeadmconstants.KubeControllerManager)),
 		kubeadmconstants.KubeScheduler: staticpodutil.ComponentPod(v1.Container{
 			Name:            kubeadmconstants.KubeScheduler,
@@ -357,6 +360,17 @@ func getProxyEnvVars() []v1.EnvVar {
 		}
 	}
 	return envs
+}
+
+func getSecurityContext() *v1.SecurityContext {
+	if selinux.SELinuxCheckContext("spc_t") {
+		return &v1.SecurityContext{
+			SELinuxOptions: &v1.SELinuxOptions{
+				Type: "spc_t",
+			},
+		}
+	}
+	return &v1.SecurityContext{}
 }
 
 // getAuthzParameters gets the authorization-related parameters to the api server
