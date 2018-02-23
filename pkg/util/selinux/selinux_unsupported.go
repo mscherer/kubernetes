@@ -23,6 +23,12 @@ func SELinuxEnabled() bool {
 	return false
 }
 
+
+// SELinuxCheckContext always return false on non-linux platforms.
+func SELinuxCheckContext(val string) bool {
+    return false
+}
+
 // realSELinuxRunner is the NOP implementation of the SELinuxRunner interface.
 type realSELinuxRunner struct{}
 

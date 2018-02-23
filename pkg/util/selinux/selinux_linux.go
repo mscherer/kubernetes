@@ -38,6 +38,17 @@ func SELinuxEnabled() bool {
 	return selinux.GetEnabled()
 }
 
+// SELinuxCheckContext return wether a context is present in the policy.
+// This is used to run kubernete and containers with specific policy depending
+// on the platform.
+func SELinuxCheckContext(val string) bool {
+    if !SELinuxEnabled() {
+        return false
+    }
+    return selinux.SecurityCheckContext(val) != nil
+}
+
+
 // realSELinuxRunner is the real implementation of SELinuxRunner interface for
 // Linux.
 type realSELinuxRunner struct{}
